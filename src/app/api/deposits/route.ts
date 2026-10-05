@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { fail, handle, n } from "@/lib/api";
 import { credit, debit } from "@/lib/wallet";
 import { getMarket } from "@/lib/market";
+import { initializeTransaction } from "@/lib/paystack";
 
 export const dynamic = "force-dynamic";
 
@@ -83,6 +84,35 @@ export async function POST(req: Request) {
         status: "pending",
       })
       .returning();
+
+    // For M-Pesa + cards, hand off to Paystack's hosted checkout. Paystack
+    // charges in the deposit's currency (KES for M-Pesa, USD for cards), the
+    // webhook settles the deposit once payment is confirmed. For crypto
+    // (usdt/btc/eth) we still return the pending deposit — real on-chain
+    // confirmation is a separate integration.
+    if (method === "mpesa" || method === "mastercard" || method === "visa") {
+      try {
+        const channels = method === "mpesa" ? ["mobile_money"] : ["card"];
+        const ps = await initializeTransaction(
+          {
+            email: user.email,
+            amount,
+            currency: spec.currency,
+            reference: row.reference,
+            channels,
+            metadata: { deposit_id: row.id, user_id: user.id, method },
+          },
+          req,
+        );
+        return { deposit: row, authorization_url: ps.authorization_url };
+      } catch (e) {
+        // Paystack didn't initiate — leave the deposit pending so the user can
+        // retry, and surface the error.
+        const msg = e instanceof Error ? e.message : "Paystack initiate failed";
+        return fail(`Could not start payment: ${msg}`, 502);
+      }
+    }
+
     return { deposit: row };
   });
 }

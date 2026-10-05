@@ -35,24 +35,43 @@ bun run db:setup       # runs scripts/seed.ts (idempotent)
 bun run dev            # http://localhost:3000
 ```
 
-**Demo account:** `demo@meridian.app` / `demo1234` (seeded with $100,000 paper balance,
-4 wallets, 11 trades, 6 signals, 5 deposits).
+**No demo account** — the app is real-only. Register a fresh account at `/register` to start (real wallets start at $0; fund via M-Pesa, Mastercard or Visa through Paystack).
 
 ## Deploy to Vercel
 
 1. Push this repo to GitHub.
 2. Import it at [vercel.com/new](https://vercel.com/new) (Vercel auto-detects Next.js).
 3. Add environment variables (Project Settings → Environment Variables):
-   - `DATABASE_URL` — your Postgres connection string (use Vercel Postgres, Neon, or Supabase).
+   - `DATABASE_URL` — your Postgres connection string (use Neon's **pooled** endpoint for serverless).
    - `AUTH_SECRET` — a long random string (e.g. `openssl rand -base64 48`).
-4. After the first deploy, run the seed against your production Postgres to create tables
-   and demo data:
+   - `PAYSTACK_SECRET_KEY` — `sk_live_…` from the [Paystack dashboard → API Keys](https://dashboard.paystack.com/#/settings/keys) (Live mode).
+   - `PAYSTACK_PUBLIC_KEY` — `pk_live_…` (same place).
+   - `APP_BASE_URL` — your Vercel production origin, e.g. `https://tradefort.vercel.app` (no trailing slash; used to build the post-payment callback URL).
+4. In the **Paystack dashboard** → Settings → API Configuration, set the **Webhook URL** to `https://<your-vercel-domain>/api/paystack/webhook` (the authoritative, HMAC-signed payment confirmation that auto-settles deposits).
+5. After the first deploy, create the schema + seed market data:
    ```bash
-   # from a local checkout with DATABASE_URL pointing at your Vercel Postgres
-   bun run db:setup
+   DATABASE_URL=postgresql://... bun run db:push && bun run db:setup
    ```
-   (Alternatively, run `bun run db:generate` + apply the generated SQL in
-   `drizzle/*.sql` with any SQL client.)
+   (`db:push` creates the tables from `src/db/schema.ts`; `db:setup` seeds 16 instruments + 6 signals — no demo user.)
+
+## Payments (Paystack)
+
+Real deposits are processed by **Paystack** — M-Pesa (KES) and Mastercard/Visa (USD) —
+with the following flow:
+
+1. User picks a method + enters an amount on `/dashboard/wallet`.
+2. `POST /api/deposits` creates a `pending` deposit and calls Paystack's
+   `transaction/initialize` → returns an `authorization_url`.
+3. The browser redirects to Paystack's hosted checkout (M-Pesa STK push or card entry).
+4. On payment, Paystack:
+   - redirects the browser to `/api/paystack/callback` (server-side `verify` + settle +
+     redirect to the wallet), AND
+   - POSTs a signed webhook to `/api/paystack/webhook` (the authoritative path —
+     HMAC-SHA512 signature verification, amount/currency re-check, then `settleDeposit`
+     credits the source-currency wallet + the USD trading wallet).
+
+Both paths are idempotent (`if dep.status !== 'pending' skip`) and both verify with
+Paystack server-side before crediting — the browser redirect alone is never trusted.
 
 ## Project structure
 

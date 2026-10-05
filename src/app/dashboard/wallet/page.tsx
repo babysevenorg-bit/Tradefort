@@ -322,7 +322,13 @@ function FundingModal({
       await onDone();
       if (kind === "withdraw") {
         setStep("done");
+      } else if (data.authorization_url) {
+        // Paystack hosted checkout — redirect the browser. On return, the
+        // /api/paystack/callback + /api/paystack/webhook settle the deposit
+        // and the wallet refresh shows the new balance.
+        window.location.href = data.authorization_url;
       } else {
+        // Crypto (usdt/btc/eth) — pending, awaiting on-chain confirmation.
         setStep("waiting");
         setTimeout(async () => {
           await fetch(`/api/deposits/${data.deposit.id}`, {
