@@ -4,7 +4,6 @@ import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AuthShell } from "@/components/auth-shell";
-import { Btn } from "@/components/ui";
 
 function LoginForm() {
   const router = useRouter();
@@ -43,7 +42,7 @@ function LoginForm() {
         <>
           No account yet?{" "}
           <Link href="/register" className="font-semibold text-[#9a5b12] underline underline-offset-2">
-            Open a demo account
+            Open an account
           </Link>
         </>
       }
@@ -90,25 +89,6 @@ function LoginForm() {
           {loading ? "Verifying…" : "Enter terminal"}
         </button>
       </form>
-
-      <div className="mt-5 border border-dashed border-news/40 bg-white/40 p-3">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[10px] font-semibold tracking-[0.16em] text-[#6b5f52] uppercase">
-              Demo credentials
-            </p>
-            <p className="mt-1 font-mono text-xs">demo@meridian.app · demo1234</p>
-          </div>
-          <Btn
-            variant="primary"
-            size="sm"
-            type="button"
-            onClick={(e) => submit(e, { email: "demo@meridian.app", password: "demo1234" })}
-          >
-            Fill in
-          </Btn>
-        </div>
-      </div>
     </AuthShell>
   );
 }

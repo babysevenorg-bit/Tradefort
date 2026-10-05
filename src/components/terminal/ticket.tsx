@@ -260,9 +260,7 @@ export function Ticket({
               : `${side === "buy" ? "Buy" : "Sell"} ${symbol}`}
         </Btn>
         <p className="text-[10px] leading-relaxed text-warm">
-          {mode === "demo"
-            ? "Paper order — settled against the live feed, no funds at risk."
-            : "Live order — real balance will be debited on fill."}
+          Live order — real balance will be debited on fill. Real funds at risk.
         </p>
       </div>
     </div>

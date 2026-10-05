@@ -28,7 +28,11 @@ const plex = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "Meridian — Forex, Crypto & Binary Terminal",
   description:
-    "Real-market pricing, live signals and a demo account for learning. Deposit with M-Pesa, USDT, Mastercard or Visa.",
+    "Real-market pricing, live signals and a real trading account. Deposit with M-Pesa, USDT, Mastercard or Visa.",
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/icon.svg" }],
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

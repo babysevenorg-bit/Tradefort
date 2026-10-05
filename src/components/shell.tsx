@@ -81,26 +81,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     refresh();
   }, [refresh]);
 
-  const mode: "demo" | "real" = me?.user.accountMode === "real" ? "real" : "demo";
+  const mode: "demo" | "real" = "real"; // real-only — demo/paper path removed
 
-  const setMode = useCallback(
-    async (m: "demo" | "real") => {
-      setMe((prev) => (prev ? { ...prev, user: { ...prev.user, accountMode: m } } : prev));
-      await fetch("/api/me", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ accountMode: m }),
-      });
-      await refresh();
-    },
-    [refresh],
-  );
+  const setMode = useCallback(async (_m: "demo" | "real") => {
+    // Real-only — mode is locked to "real". No-op kept for API compat with
+    // any consumer that still calls it; the toggle UI has been removed.
+  }, []);
 
   const balance = useMemo(() => {
     if (!me) return 0;
-    const w = me.wallets.find((x) => x.currency === "USD" && x.kind === mode);
+    const w = me.wallets.find((x) => x.currency === "USD" && x.kind === "real");
     return Number(w?.balance ?? 0);
-  }, [me, mode]);
+  }, [me]);
 
   return (
     <Ctx.Provider value={{ me, loading, mode, refresh, setMode, balance }}>
@@ -130,7 +122,7 @@ function Monogram() {
 export function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { me, mode, setMode, balance, refresh } = useSession();
+  const { me, balance, refresh } = useSession();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -195,7 +187,7 @@ export function Shell({ children }: { children: ReactNode }) {
       {nav}
       <div className="mt-auto border-t border-hair p-3">
         <div className="mb-3 border border-hair2 bg-ink px-3 py-2.5">
-          <div className="label text-warm">{mode === "demo" ? "Paper equity" : "Live equity"}</div>
+          <div className="label text-warm">Equity</div>
           <div className="tnum mt-1 font-mono text-xl text-amber">{fmtMoney(balance)}</div>
           <Link
             href="/dashboard/wallet"
@@ -273,35 +265,13 @@ export function Shell({ children }: { children: ReactNode }) {
               {open ? <X size={18} /> : <Menu size={18} />}
             </button>
 
-            <div className="flex items-center border border-hair2">
-              {(["demo", "real"] as const).map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setMode(m)}
-                  className={`h-7 px-2.5 text-[10px] font-bold tracking-[0.14em] uppercase transition-colors ${
-                    mode === m
-                      ? m === "demo"
-                        ? "bg-amber text-ink"
-                        : "bg-down text-ink"
-                      : "text-warm hover:text-[#e7e5e1]"
-                  }`}
-                >
-                  {m === "demo" ? "Demo" : "Real"}
-                </button>
-              ))}
-            </div>
-
             <span className="hidden text-[11px] text-warm sm:inline">
-              {mode === "demo"
-                ? "Paper account — identical pricing, no risk"
-                : "Live account — real funds at risk"}
+              Live account — real funds at risk
             </span>
 
             <div className="ml-auto flex items-center gap-3">
               <span className="hidden text-right sm:block">
-                <span className="label block text-warm">
-                  {mode === "demo" ? "Paper equity" : "Live equity"}
-                </span>
+                <span className="label block text-warm">Equity</span>
                 <span className="tnum font-mono text-sm text-amber">{fmtMoney(balance)}</span>
               </span>
               <Link

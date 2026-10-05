@@ -2,10 +2,8 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, RotateCcw, Award } from "lucide-react";
+import { ChevronDown, Award } from "lucide-react";
 import { Btn, Panel, Pill } from "@/components/ui";
-import { useSession } from "@/components/shell";
-import { fmtMoney } from "@/lib/market-core";
 
 const LESSONS = [
   {
@@ -30,7 +28,7 @@ const LESSONS = [
     id: "l4",
     title: "One percent, every time",
     meta: "4 min · risk",
-    body: "Risk no more than 1% of equity on a single idea. On a $100,000 demo balance that is $1,000 of maximum pain — size the position backwards from your stop distance, never forwards from your greed. Ten consecutive losses at 1% cost you 9.6%; twenty consecutive losses at 5% cost you 64%.",
+    body: "Risk no more than 1% of equity on a single idea. On a $1,000 balance that is $10 of maximum pain — size the position backwards from your stop distance, never forwards from your greed. Ten consecutive losses at 1% cost you 9.6%; twenty consecutive losses at 5% cost you 64%.",
   },
   {
     id: "l5",
@@ -60,66 +58,33 @@ const QUIZ = [
     why: "The fourth decimal is the pip: 1.08742 − 1.08642 = 0.00100 = 10 pips.",
   },
   {
-    q: "What is the point of the demo account?",
+    q: "What does the stake on every order represent?",
     options: [
-      "To guarantee future returns",
-      "To rehearse the full workflow against live prices with no funds at risk",
-      "To get a larger leverage cap",
-      "To skip identity checks",
+      "Your maximum possible loss on the idea",
+      "Your leverage multiplier",
+      "Your expected profit",
+      "The spread you pay",
     ],
-    answer: 1,
-    why: "The paper balance uses identical pricing, spreads and signals so the mechanics become automatic before real money is at stake.",
+    answer: 0,
+    why: "The stake is debited at fill and is the most you can lose — size the position backwards from your stop distance, never forwards from your greed.",
   },
 ];
 
 export default function LearnPage() {
-  const { refresh } = useSession();
   const [open, setOpen] = useState<string | null>("l1");
   const [done, setDone] = useState<string[]>([]);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [submitted, setSubmitted] = useState(false);
-  const [resetting, setResetting] = useState(false);
-  const [banner, setBanner] = useState<string | null>(null);
 
   const score = QUIZ.reduce((s, q, i) => s + (answers[i] === q.answer ? 1 : 0), 0);
   const progress = Math.round((done.length / LESSONS.length) * 100);
 
-  async function resetDemo() {
-    setResetting(true);
-    const res = await fetch("/api/wallets", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "reset" }),
-    });
-    setResetting(false);
-    if (res.ok) {
-      setBanner("Paper balance reset to $100,000.00 — fresh slate, same live prices.");
-      await refresh();
-      setTimeout(() => setBanner(null), 5000);
-    } else {
-      setBanner("Could not reset the balance. Try again.");
-    }
-  }
-
   return (
     <div className="space-y-4 p-3 sm:p-4">
       <div className="border-b border-hair pb-3">
-        <p className="label text-warm">Paper-account academy · five short lessons · four questions</p>
+        <p className="label text-warm">Real-account academy · five short lessons · four questions</p>
         <h1 className="font-display text-3xl font-medium text-paper">Learn the desk</h1>
       </div>
-
-      <AnimatePresence>
-        {banner && (
-          <motion.p
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="border-l-2 border-amber bg-amber/10 px-3 py-2 text-xs text-amber"
-          >
-            {banner}
-          </motion.p>
-        )}
-      </AnimatePresence>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.5fr_1fr]">
         <div className="space-y-4">
@@ -256,7 +221,7 @@ export default function LearnPage() {
                   <Award size={22} className={score >= 3 ? "text-up" : "text-amber"} />
                   <p className="text-xs text-[#a7a196]">
                     {score >= 3
-                      ? "Sharp. The demo balance is yours to trade — switch the ticket to Real when the mechanics feel boring."
+                      ? "Sharp. The desk is yours — size each position backwards from your stop and let the edge compound."
                       : "Worth a second pass on lessons 2 and 3 — payout maths and pip arithmetic decide whether this is a business or a hobby."}
                   </p>
                 </div>
@@ -264,22 +229,7 @@ export default function LearnPage() {
             </div>
           </Panel>
 
-          <Panel title="Paper account">
-            <div className="space-y-3 p-3">
-              <div className="border border-hair bg-ink px-3 py-3">
-                <div className="label text-warm">Current paper balance</div>
-                <div className="tnum mt-1 font-mono text-2xl text-amber">{fmtMoney(100000)}</div>
-                <p className="mt-1 text-[11px] leading-relaxed text-warm">
-                  Identical pricing to the live desk. A reset restores the $100,000 starting balance
-                  and cancels every open paper position — settled trades and funding records stay on
-                  the tape for review.
-                </p>
-              </div>
-              <Btn variant="primary" size="lg" className="w-full" loading={resetting} onClick={resetDemo}>
-                <RotateCcw size={14} /> Reset demo balance
-              </Btn>
-            </div>
-          </Panel>
+
         </div>
       </div>
       <div className="h-2" />

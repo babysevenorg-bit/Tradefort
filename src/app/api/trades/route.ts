@@ -86,7 +86,10 @@ export async function POST(req: Request) {
     const symbol = String(body.symbol ?? "");
     const product = String(body.product ?? "spot");
     const side = String(body.side ?? "buy");
-    const mode = body.mode === "real" ? "real" : "demo";
+    // Real-accounts mode: all trades settle against the real USD wallet.
+    // (body.mode is ignored — the demo/paper path was removed when the app went
+    // real-only. The DB `mode` column is retained for historical trades.)
+    const mode = "real";
     const amount = Number(body.amount);
     const leverage = Math.max(1, Math.min(125, Number(body.leverage ?? 1)));
     const expirySeconds = [30, 60, 300, 900].includes(Number(body.expirySeconds))

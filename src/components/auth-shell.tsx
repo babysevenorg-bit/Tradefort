@@ -42,7 +42,7 @@ export function AuthShell({
             {[
               ["Markets", "16"],
               ["Products", "3"],
-              ["Demo funds", "$100k"],
+              ["Real funds", "Live"],
             ].map(([k, v]) => (
               <div key={k} className="bg-panel px-3 py-3">
                 <div className="tnum font-mono text-xl text-amber">{v}</div>

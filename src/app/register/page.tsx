@@ -40,7 +40,7 @@ function RegisterForm() {
     <AuthShell
       eyebrow="Open an account"
       title="Take the desk for a spin"
-      lede="You start with a $100,000 paper balance, live pricing and the full signal feed. Deposit later — M-Pesa, USDT, Mastercard or Visa."
+      lede="Open a real trading account — live pricing, the full signal feed, and deposits via M-Pesa, USDT, Mastercard or Visa. Your balance starts at zero; fund it to trade."
       footer={
         <>
           Already registered?{" "}
@@ -118,11 +118,11 @@ function RegisterForm() {
           disabled={loading}
           className="h-12 w-full bg-news text-[13px] font-bold tracking-[0.16em] text-paper uppercase transition-colors hover:bg-[#9a5b12] disabled:opacity-50"
         >
-          {loading ? "Opening account…" : "Open demo account"}
+          {loading ? "Opening account…" : "Open account"}
         </button>
         <p className="text-[11px] leading-relaxed text-[#6b5f52]">
-          By opening an account you accept that leveraged trading can lose your full balance. The
-          demo account is simulated and carries no monetary value.
+          By opening an account you accept that leveraged trading can lose your full balance. This
+          is a real account — deposits and trades involve actual funds.
         </p>
       </form>
     </AuthShell>

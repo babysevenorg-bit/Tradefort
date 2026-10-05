@@ -16,7 +16,7 @@ const DESKS = [
   ["01", "Real prices, not a game", "Crypto books stream from the live exchange. Forex, metals and indices run on institutional ticks with the same spread we quote the desk."],
   ["02", "Three products, one margin", "Spot, leveraged forex and 60-second binaries draw from a single balance — switch product in the ticket without moving funds."],
   ["03", "Signals with the numbers attached", "Every signal ships entry, stop, target and a confidence score. Copy it into the terminal in one click or retire it when the structure breaks."],
-  ["04", "Learn on paper first", "The demo account starts at $100,000, uses identical pricing, and can be reset any time from the Learn desk."],
+  ["04", "Start with real money", "Open a real account, deposit what you're comfortable risking via M-Pesa, USDT, Mastercard or Visa, and trade the live feed. No top-up, no resets — real funds, real risk."],
 ];
 
 export default async function LandingPage() {
@@ -70,7 +70,7 @@ export default async function LandingPage() {
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-news/40 py-2 text-[10px] tracking-[0.18em] uppercase">
           <span>Est. 2019 · Licensed FX &amp; OTC derivatives</span>
           <span className="hidden sm:inline">Signals published in real time</span>
-          <span>Demo balance $100,000</span>
+          <span>Real account · live funds</span>
         </div>
       </header>
 
@@ -88,7 +88,7 @@ export default async function LandingPage() {
           <p className="mt-6 max-w-[62ch] text-[17px] leading-[1.55] text-[#3a3128]">
             Meridian puts spot crypto, leveraged forex, indices and 60-second binary options on one
             balance sheet. Prices tick from the live exchange; signals arrive with entry, stop and
-            target attached; and a $100,000 paper account lets you rehearse the whole thing until the
+            target attached; and a real account lets you size each position to the cent and rehearse the whole thing until the
             clicks are automatic.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -96,7 +96,7 @@ export default async function LandingPage() {
               href="/register"
               className="inline-flex h-12 items-center bg-news px-6 text-[13px] font-bold tracking-[0.14em] text-paper uppercase transition-colors hover:bg-[#9a5b12]"
             >
-              Open a demo account
+              Open an account
             </Link>
             <Link
               href="/login"
@@ -263,11 +263,11 @@ export default async function LandingPage() {
         <div className="mx-auto flex max-w-[1240px] flex-col items-start gap-6 px-5 py-14 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h3 className="font-display text-[clamp(2rem,4vw,3.2rem)] leading-tight">
-              Start with $100,000 of paper money.
+              Start with a real account.
             </h3>
             <p className="mt-2 max-w-[54ch] text-sm text-[#a7a196]">
-              The demo account carries identical pricing, identical spreads and identical signals.
-              Reset it as often as you like — then switch the ticket to live.
+              A real account carries identical pricing, identical spreads and identical signals.
+              Deposit what you're comfortable risking — then trade the live feed.
             </p>
           </div>
           <Link
@@ -283,8 +283,7 @@ export default async function LandingPage() {
         <div className="mx-auto flex max-w-[1240px] flex-col gap-3 px-5 sm:flex-row sm:justify-between">
           <span>© {new Date().getFullYear()} Meridian Terminal Ltd · Nairobi</span>
           <span className="max-w-[60ch]">
-            Trading leveraged products carries risk of total loss. Demo balances are simulated and
-            carry no value.
+            Trading leveraged products carries risk of total loss. This is a real account — deposits and trades involve actual funds. Trade only what you can afford to lose.
           </span>
         </div>
       </footer>

@@ -124,7 +124,7 @@ export default function OverviewPage() {
       {/* equity */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr]">
         <Panel
-          title={mode === "demo" ? "Paper equity · 48h" : "Live equity · 48h"}
+          title="Equity · 48h"
           right={<Pill tone="amber">{mode}</Pill>}
           bodyClass="p-3"
         >
@@ -161,7 +161,7 @@ export default function OverviewPage() {
 
         <Panel title="Account status" bodyClass="divide-y divide-[#1e222a]">
           {[
-            ["Mode", mode === "demo" ? "Paper trading" : "Live trading", mode === "demo" ? "amber" : "down"],
+            ["Mode", "Live trading", "down"],
             ["Country", me?.user.country ?? "—", "neutral"],
             ["Active signals", String(me?.stats.signals ?? 0), "amber"],
             ["Pending deposits", String(pending.length), pending.length ? "amber" : "muted"],
@@ -172,8 +172,8 @@ export default function OverviewPage() {
             </div>
           ))}
           <div className="p-3">
-            <LinkBtn href="/dashboard/learn" className="w-full">
-              Reset demo balance &amp; learn
+            <LinkBtn href="/dashboard/wallet" className="w-full">
+              Deposit funds
             </LinkBtn>
           </div>
         </Panel>

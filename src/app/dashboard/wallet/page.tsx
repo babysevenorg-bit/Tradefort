@@ -142,7 +142,7 @@ export default function WalletPage() {
                   <span className="text-[10px] font-bold tracking-[0.16em] text-warm uppercase">
                     {w.currency}
                   </span>
-                  <Pill tone={w.kind === "demo" ? "amber" : "up"}>{w.kind}</Pill>
+                  <Pill tone="up">real</Pill>
                 </div>
                 <div className="tnum mt-2 font-mono text-2xl text-amber">
                   {fmtMoney(Number(w.balance), w.currency)}

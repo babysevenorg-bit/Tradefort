@@ -23,15 +23,15 @@ export async function POST(req: Request) {
         name,
         email,
         country: String(body.country ?? "Kenya"),
+        accountMode: "real",
         passwordHash: await hashPassword(password),
       })
       .returning();
 
     await db.insert(wallets).values([
-      { userId: user.id, currency: "USD", kind: "demo", label: "Demo paper balance", balance: "100000.00" },
+      { userId: user.id, currency: "USD", kind: "real", label: "USD · trading balance", balance: "0.00" },
       { userId: user.id, currency: "USDT", kind: "real", label: "Tether · TRC20 + ERC20", address: "TQ7mN4xVb2kR9sYgHdW3pLuZcE5aXn1JvF", balance: "0.00" },
       { userId: user.id, currency: "KES", kind: "real", label: "M-Pesa Safaricom", address: "2547•••••21", balance: "0.00" },
-      { userId: user.id, currency: "USD", kind: "real", label: "Card · Mastercard / Visa", balance: "0.00" },
     ]);
 
     await createSession(user.id);

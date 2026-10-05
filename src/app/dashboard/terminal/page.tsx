@@ -265,7 +265,7 @@ export default function TerminalPage() {
           <CandleChart symbol={symbol} decimals={decimals} markers={markers} />
 
           <div className="border-y border-hair bg-panel2 px-3 py-1.5 text-[11px] text-warm">
-            {mode === "demo" ? "Paper" : "Live"} book · spread{" "}
+            Live book · spread{" "}
             <span className="tnum text-amber">{inst ? Number(inst.spread).toFixed(decimals > 3 ? 5 : 2) : "—"}</span>{" "}
             · {openForSymbol.length} open on this symbol
           </div>
