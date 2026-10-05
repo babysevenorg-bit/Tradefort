@@ -1,5 +1,7 @@
+import "dotenv/config";
+import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
-import { db, closeDb, sqlite } from "../src/db";
+import { db, pool } from "../src/db";
 import {
   users,
   wallets,
@@ -9,128 +11,8 @@ import {
   deposits,
   watchlist,
 } from "../src/db/schema";
-import { eq } from "drizzle-orm";
 import { SEED_INSTRUMENTS, simPrice } from "../src/lib/market-core";
 
-/* ------------------------------------------------------------------ *
- * 1. Create tables (raw DDL, idempotent). Mirrors src/db/schema.ts.  *
- *    SQLite has no `numeric` type — money is stored as TEXT so the   *
- *    string semantics the app code relies on (Number(...), toFixed) *
- *    are preserved. Timestamps are epoch-ms INTEGERs.               *
- * ------------------------------------------------------------------ */
-const DDL = `
-CREATE TABLE IF NOT EXISTS users (
-  id            INTEGER PRIMARY KEY AUTOINCREMENT,
-  name          TEXT NOT NULL,
-  email         TEXT NOT NULL,
-  password_hash TEXT NOT NULL,
-  country       TEXT DEFAULT 'Kenya',
-  account_mode  TEXT NOT NULL DEFAULT 'demo',
-  created_at    INTEGER NOT NULL
-);
-CREATE UNIQUE INDEX IF NOT EXISTS users_email_idx ON users(email);
-
-CREATE TABLE IF NOT EXISTS wallets (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  currency   TEXT NOT NULL,
-  kind       TEXT NOT NULL,
-  label      TEXT NOT NULL,
-  address    TEXT,
-  balance    TEXT NOT NULL DEFAULT '0',
-  updated_at INTEGER NOT NULL
-);
-CREATE UNIQUE INDEX IF NOT EXISTS wallet_user_currency_idx ON wallets(user_id, currency, kind);
-
-CREATE TABLE IF NOT EXISTS instruments (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  symbol     TEXT NOT NULL UNIQUE,
-  name       TEXT NOT NULL,
-  klass      TEXT NOT NULL,
-  base_price TEXT NOT NULL,
-  decimals   INTEGER NOT NULL DEFAULT 2,
-  volatility TEXT NOT NULL DEFAULT '0.0015',
-  payout_bp  INTEGER NOT NULL DEFAULT 8700,
-  exchange   TEXT NOT NULL DEFAULT 'MERIDIAN',
-  spread     TEXT NOT NULL DEFAULT '0.0002',
-  binary     INTEGER NOT NULL DEFAULT 1,
-  created_at INTEGER NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS trades (
-  id           INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  symbol       TEXT NOT NULL,
-  klass        TEXT NOT NULL,
-  mode         TEXT NOT NULL DEFAULT 'demo',
-  product      TEXT NOT NULL,
-  side         TEXT NOT NULL,
-  amount       TEXT NOT NULL,
-  quantity     TEXT NOT NULL DEFAULT '0',
-  leverage     INTEGER NOT NULL DEFAULT 1,
-  entry_price  TEXT NOT NULL,
-  exit_price   TEXT,
-  stop_loss    TEXT,
-  take_profit  TEXT,
-  expiry       INTEGER,
-  payout_bp    INTEGER DEFAULT 8700,
-  status       TEXT NOT NULL DEFAULT 'open',
-  pnl          TEXT DEFAULT '0',
-  opened_at    INTEGER NOT NULL,
-  closed_at    INTEGER
-);
-CREATE INDEX IF NOT EXISTS trades_user_idx ON trades(user_id);
-CREATE INDEX IF NOT EXISTS trades_status_idx ON trades(status);
-
-CREATE TABLE IF NOT EXISTS signals (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  symbol     TEXT NOT NULL,
-  klass      TEXT NOT NULL,
-  direction  TEXT NOT NULL,
-  timeframe  TEXT NOT NULL DEFAULT 'H1',
-  entry      TEXT NOT NULL,
-  stop       TEXT NOT NULL,
-  target     TEXT NOT NULL,
-  confidence INTEGER NOT NULL DEFAULT 70,
-  source     TEXT NOT NULL DEFAULT 'Meridian Quant',
-  headline   TEXT NOT NULL,
-  note       TEXT,
-  status     TEXT NOT NULL DEFAULT 'active',
-  created_at INTEGER NOT NULL
-);
-CREATE INDEX IF NOT EXISTS signals_status_idx ON signals(status);
-
-CREATE TABLE IF NOT EXISTS deposits (
-  id           INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  method       TEXT NOT NULL,
-  amount       TEXT NOT NULL,
-  currency     TEXT NOT NULL DEFAULT 'KES',
-  reference    TEXT NOT NULL,
-  channel_note TEXT,
-  status       TEXT NOT NULL DEFAULT 'pending',
-  created_at   INTEGER NOT NULL,
-  settled_at   INTEGER
-);
-CREATE INDEX IF NOT EXISTS deposits_user_idx ON deposits(user_id);
-
-CREATE TABLE IF NOT EXISTS watchlist (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  symbol     TEXT NOT NULL,
-  note       TEXT,
-  created_at INTEGER NOT NULL
-);
-CREATE UNIQUE INDEX IF NOT EXISTS watch_user_symbol_idx ON watchlist(user_id, symbol);
-`;
-
-function createSchema() {
-  sqlite.exec(DDL);
-}
-
-/* ------------------------------------------------------------------ *
- * 2. Seed (ported from the original pg seed — query shapes preserved)*
- * ------------------------------------------------------------------ */
 const now = Date.now();
 const ago = (mins: number) => new Date(now - mins * 60000);
 
@@ -158,8 +40,6 @@ async function seedInstruments() {
 }
 
 async function main() {
-  createSchema();
-
   await seedInstruments();
 
   const existing = await db.select().from(users).where(eq(users.email, "demo@meridian.app")).limit(1);
@@ -195,7 +75,6 @@ async function main() {
     const i = SEED_INSTRUMENTS.find((x) => x.symbol === s)!;
     return simPrice(s, i.basePrice, i.volatility, now);
   };
-  void price;
 
   const seedTrades: Array<Partial<typeof trades.$inferInsert>> = [
     { symbol: "BTC/USDT", klass: "crypto", product: "spot", mode: "demo", side: "buy", amount: "4000.00", quantity: "0.05846", leverage: 5, entryPrice: "66980.40", stopLoss: "65200.00", takeProfit: "71500.00", status: "open", pnl: "0", openedAt: ago(184) },
@@ -245,15 +124,13 @@ async function main() {
     )
     .onConflictDoNothing();
 
-  console.log("✓ Schema created + seeded:");
-  console.log("  instruments: 16  | demo user: demo@meridian.app / demo1234");
-  console.log("  trades, signals, deposits, watchlist all seeded");
+  console.log("Seeded: instruments, user demo@meridian.app / demo1234, trades, signals, deposits, watchlist");
 }
 
 main()
-  .then(() => closeDb())
+  .then(() => pool.end())
   .catch(async (e) => {
     console.error(e);
-    closeDb();
+    await pool.end();
     process.exit(1);
   });

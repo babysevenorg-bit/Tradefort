@@ -1,162 +1,141 @@
 import {
-  sqliteTable,
-  integer,
+  pgTable,
+  serial,
+  varchar,
   text,
+  timestamp,
+  numeric,
+  integer,
+  boolean,
   uniqueIndex,
   index,
-} from "drizzle-orm/sqlite-core";
+} from "drizzle-orm/pg-core";
 
-// NOTE: This project originally targeted PostgreSQL (pg-core). The sandbox only
-// ships SQLite, so the schema is expressed with drizzle's sqlite-core driver.
-// Query call-sites across /src/app/api and /src/lib are unchanged.
-//
-// Type mapping:
-//   serial  -> integer primaryKey autoincrement
-//   varchar -> text (length is advisory, ignored by sqlite)
-//   numeric -> text (preserves string semantics; reads via Number(...))
-//   timestamp -> integer mode:timestamp (epoch ms, returns Date)
-//   boolean -> integer mode:boolean
-//   defaultNow() -> default(() => new Date()) (reliable across sqlite)
-
-export const users = sqliteTable(
+export const users = pgTable(
   "users",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
-    name: text("name").notNull(),
-    email: text("email").notNull(),
+    id: serial("id").primaryKey(),
+    name: varchar("name", { length: 120 }).notNull(),
+    email: varchar("email", { length: 180 }).notNull(),
     passwordHash: text("password_hash").notNull(),
-    country: text("country").default("Kenya"),
-    accountMode: text("account_mode").notNull().default("demo"),
-    createdAt: integer("created_at", { mode: "timestamp" })
-      .notNull()
-      .$defaultFn(() => new Date()),
+    country: varchar("country", { length: 64 }).default("Kenya"),
+    accountMode: varchar("account_mode", { length: 12 }).notNull().default("demo"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex("users_email_idx").on(t.email)],
 );
 
-export const wallets = sqliteTable(
+export const wallets = pgTable(
   "wallets",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: serial("id").primaryKey(),
     userId: integer("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    currency: text("currency").notNull(),
-    kind: text("kind").notNull(), // demo | real
-    label: text("label").notNull(),
-    address: text("address"),
-    balance: text("balance").notNull().default("0"),
-    updatedAt: integer("updated_at", { mode: "timestamp" })
-      .notNull()
-      .$defaultFn(() => new Date()),
+    currency: varchar("currency", { length: 12 }).notNull(),
+    kind: varchar("kind", { length: 12 }).notNull(), // demo | real
+    label: varchar("label", { length: 60 }).notNull(),
+    address: varchar("address", { length: 90 }),
+    balance: numeric("balance", { precision: 18, scale: 2 }).notNull().default("0"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex("wallet_user_currency_idx").on(t.userId, t.currency, t.kind)],
 );
 
-export const instruments = sqliteTable("instruments", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  symbol: text("symbol").notNull().unique(),
-  name: text("name").notNull(),
-  klass: text("klass").notNull(), // crypto | forex | index | stock | metal
-  basePrice: text("base_price").notNull(),
+export const instruments = pgTable("instruments", {
+  id: serial("id").primaryKey(),
+  symbol: varchar("symbol", { length: 24 }).notNull().unique(),
+  name: varchar("name", { length: 90 }).notNull(),
+  klass: varchar("klass", { length: 16 }).notNull(), // crypto | forex | index | stock | metal
+  basePrice: numeric("base_price", { precision: 18, scale: 6 }).notNull(),
   decimals: integer("decimals").notNull().default(2),
-  volatility: text("volatility").notNull().default("0.0015"),
+  volatility: numeric("volatility", { precision: 10, scale: 6 }).notNull().default("0.0015"),
   payoutBp: integer("payout_bp").notNull().default(8700),
-  exchange: text("exchange").notNull().default("MERIDIAN"),
-  spread: text("spread").notNull().default("0.0002"),
-  binary: integer("binary", { mode: "boolean" }).notNull().default(true),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .$defaultFn(() => new Date()),
+  exchange: varchar("exchange", { length: 40 }).notNull().default("MERIDIAN"),
+  spread: numeric("spread", { precision: 10, scale: 6 }).notNull().default("0.0002"),
+  binary: boolean("binary").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const trades = sqliteTable(
+export const trades = pgTable(
   "trades",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: serial("id").primaryKey(),
     userId: integer("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    symbol: text("symbol").notNull(),
-    klass: text("klass").notNull(),
-    mode: text("mode").notNull().default("demo"),
-    product: text("product").notNull(), // spot | forex | binary
-    side: text("side").notNull(), // buy | sell | up | down
-    amount: text("amount").notNull(),
-    quantity: text("quantity").notNull().default("0"),
+    symbol: varchar("symbol", { length: 24 }).notNull(),
+    klass: varchar("klass", { length: 16 }).notNull(),
+    mode: varchar("mode", { length: 12 }).notNull().default("demo"),
+    product: varchar("product", { length: 12 }).notNull(), // spot | forex | binary
+    side: varchar("side", { length: 8 }).notNull(), // buy | sell | up | down
+    amount: numeric("amount", { precision: 18, scale: 2 }).notNull(),
+    quantity: numeric("quantity", { precision: 18, scale: 8 }).notNull().default("0"),
     leverage: integer("leverage").notNull().default(1),
-    entryPrice: text("entry_price").notNull(),
-    exitPrice: text("exit_price"),
-    stopLoss: text("stop_loss"),
-    takeProfit: text("take_profit"),
-    expiry: integer("expiry", { mode: "timestamp" }),
+    entryPrice: numeric("entry_price", { precision: 18, scale: 6 }).notNull(),
+    exitPrice: numeric("exit_price", { precision: 18, scale: 6 }),
+    stopLoss: numeric("stop_loss", { precision: 18, scale: 6 }),
+    takeProfit: numeric("take_profit", { precision: 18, scale: 6 }),
+    expiry: timestamp("expiry", { withTimezone: true }),
     payoutBp: integer("payout_bp").default(8700),
-    status: text("status").notNull().default("open"), // open | closed | won | lost
-    pnl: text("pnl").default("0"),
-    openedAt: integer("opened_at", { mode: "timestamp" })
-      .notNull()
-      .$defaultFn(() => new Date()),
-    closedAt: integer("closed_at", { mode: "timestamp" }),
+    status: varchar("status", { length: 12 }).notNull().default("open"), // open | closed | won | lost
+    pnl: numeric("pnl", { precision: 18, scale: 2 }).default("0"),
+    openedAt: timestamp("opened_at", { withTimezone: true }).notNull().defaultNow(),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
   },
   (t) => [index("trades_user_idx").on(t.userId), index("trades_status_idx").on(t.status)],
 );
 
-export const signals = sqliteTable(
+export const signals = pgTable(
   "signals",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
-    symbol: text("symbol").notNull(),
-    klass: text("klass").notNull(),
-    direction: text("direction").notNull(), // long | short
-    timeframe: text("timeframe").notNull().default("H1"),
-    entry: text("entry").notNull(),
-    stop: text("stop").notNull(),
-    target: text("target").notNull(),
+    id: serial("id").primaryKey(),
+    symbol: varchar("symbol", { length: 24 }).notNull(),
+    klass: varchar("klass", { length: 16 }).notNull(),
+    direction: varchar("direction", { length: 6 }).notNull(), // long | short
+    timeframe: varchar("timeframe", { length: 8 }).notNull().default("H1"),
+    entry: numeric("entry", { precision: 18, scale: 6 }).notNull(),
+    stop: numeric("stop", { precision: 18, scale: 6 }).notNull(),
+    target: numeric("target", { precision: 18, scale: 6 }).notNull(),
     confidence: integer("confidence").notNull().default(70),
-    source: text("source").notNull().default("Meridian Quant"),
-    headline: text("headline").notNull(),
+    source: varchar("source", { length: 40 }).notNull().default("Meridian Quant"),
+    headline: varchar("headline", { length: 160 }).notNull(),
     note: text("note"),
-    status: text("status").notNull().default("active"), // active | hit | invalid
-    createdAt: integer("created_at", { mode: "timestamp" })
-      .notNull()
-      .$defaultFn(() => new Date()),
+    status: varchar("status", { length: 12 }).notNull().default("active"), // active | hit | invalid
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("signals_status_idx").on(t.status)],
 );
 
-export const deposits = sqliteTable(
+export const deposits = pgTable(
   "deposits",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: serial("id").primaryKey(),
     userId: integer("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    method: text("method").notNull(), // mpesa | usdt | mastercard | visa | eth | btc
-    amount: text("amount").notNull(),
-    currency: text("currency").notNull().default("KES"),
-    reference: text("reference").notNull(),
-    channelNote: text("channel_note"),
-    status: text("status").notNull().default("pending"),
-    createdAt: integer("created_at", { mode: "timestamp" })
-      .notNull()
-      .$defaultFn(() => new Date()),
-    settledAt: integer("settled_at", { mode: "timestamp" }),
+    method: varchar("method", { length: 20 }).notNull(), // mpesa | usdt | mastercard | visa | eth | btc
+    amount: numeric("amount", { precision: 18, scale: 2 }).notNull(),
+    currency: varchar("currency", { length: 12 }).notNull().default("KES"),
+    reference: varchar("reference", { length: 40 }).notNull(),
+    channelNote: varchar("channel_note", { length: 90 }),
+    status: varchar("status", { length: 12 }).notNull().default("pending"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    settledAt: timestamp("settled_at", { withTimezone: true }),
   },
   (t) => [index("deposits_user_idx").on(t.userId)],
 );
 
-export const watchlist = sqliteTable(
+export const watchlist = pgTable(
   "watchlist",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: serial("id").primaryKey(),
     userId: integer("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    symbol: text("symbol").notNull(),
-    note: text("note"),
-    createdAt: integer("created_at", { mode: "timestamp" })
-      .notNull()
-      .$defaultFn(() => new Date()),
+    symbol: varchar("symbol", { length: 24 }).notNull(),
+    note: varchar("note", { length: 90 }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex("watch_user_symbol_idx").on(t.userId, t.symbol)],
 );

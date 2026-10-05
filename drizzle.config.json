@@ -1,8 +1,7 @@
 {
-  "dialect": "sqlite",
+  "dialect": "postgresql",
   "schema": "./src/db/schema.ts",
-  "out": "./drizzle",
   "dbCredentials": {
-    "url": "file:./db/meridian.db"
+    "url": "postgresql://postgres:postgres@127.0.0.1:5432/app_db"
   }
 }
