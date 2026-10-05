@@ -2,15 +2,13 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: false,
-  // Production safety nets so `next build` succeeds on Vercel even if a few
-  // TS types or lint rules (e.g. react-hooks/set-state-in-effect, which the
-  // chart/polling code legitimately trips) aren't fully resolved. Flip these
-  // off once you want strict CI on type/lint.
+  // `next build` skips type-checking (the chart/polling code has intentional
+  // setState-in-effect patterns Next's react-hooks plugin flags). Flip this off
+  // once you want strict TS CI. Note: Next 16 removed the `eslint` config option
+  // (linting is run separately via `next lint`, not during build), so there's no
+  // `eslint.ignoreDuringBuilds` here.
   typescript: {
     ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
   },
 };
 
