@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, Trash2, RefreshCcw, ArrowUpFromLine, Check } from "lucide-react";
 import { useSession } from "@/components/shell";
+import { useMarket } from "@/components/market";
 import { Btn, Empty, Panel, Pill, Skeleton } from "@/components/ui";
 import { fmtMoney } from "@/lib/market-core";
 
@@ -19,8 +20,12 @@ type Deposit = {
   settledAt: string | null;
 };
 
+// M-Pesa + cards are USD-denominated (the user enters a USD trading credit;
+// min $10). For M-Pesa the server converts USD → KES at the live rate and
+// Paystack pushes the STK prompt for the KES figure. Crypto stays in its own
+// units (on-chain, not Paystack).
 const METHODS = [
-  { key: "mpesa", name: "M-Pesa", detail: "Safaricom STK push · KES", min: 100, cur: "KES" },
+  { key: "mpesa", name: "M-Pesa", detail: "Safaricom STK push · USD → KES", min: 10, cur: "USD" },
   { key: "usdt", name: "USDT", detail: "TRC20 · ERC20 · BEP20", min: 10, cur: "USDT" },
   { key: "btc", name: "Bitcoin", detail: "Native on-chain · 12 conf", min: 0.0001, cur: "BTC" },
   { key: "eth", name: "Ethereum", detail: "ERC20 · 12 conf", min: 0.001, cur: "ETH" },
@@ -290,10 +295,17 @@ function FundingModal({
     kind === "withdraw" ? "details" : "choose",
   );
   const [reference, setReference] = useState("");
+  const { quotes } = useMarket();
 
   const spec = METHODS.find((m) => m.key === method);
-  const min = kind === "withdraw" ? 10 : (spec?.min ?? 10);
+  const min = kind === "withdraw" ? 50 : (spec?.min ?? 10);
   const isCard = method === "mastercard" || method === "visa";
+  // For M-Pesa: the user enters USD; the server converts to KES at the live
+  // rate and Paystack pushes the STK prompt for the KES figure. Show the
+  // conversion live so the user knows what they'll actually pay.
+  const usdAmt = Number(amount) || 0;
+  const kesRate = quotes["USD/KES"]?.price ?? 129.42;
+  const kesAmt = method === "mpesa" && kind === "deposit" ? usdAmt * kesRate : 0;
 
   async function submit() {
     if (!spec && kind === "deposit") return;
@@ -430,6 +442,11 @@ function FundingModal({
                   placeholder={String(min * 10)}
                   className="tnum h-11 w-full border border-hair2 bg-ink px-3 font-mono text-lg text-[#e7e5e1] focus:border-amber"
                 />
+                {method === "mpesa" && kesAmt > 0 && (
+                  <span className="mt-1.5 block text-[11px] text-amber">
+                    ≈ KES {kesAmt.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} · STK push to your handset
+                  </span>
+                )}
               </label>
 
               {method === "mpesa" && (
