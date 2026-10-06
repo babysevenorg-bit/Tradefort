@@ -46,7 +46,9 @@ bun run dev            # http://localhost:3000
    - `AUTH_SECRET` — a long random string (e.g. `openssl rand -base64 48`).
    - `PAYSTACK_SECRET_KEY` — `sk_live_…` from the [Paystack dashboard → API Keys](https://dashboard.paystack.com/#/settings/keys) (Live mode).
    - `PAYSTACK_PUBLIC_KEY` — `pk_live_…` (same place).
-   - `APP_BASE_URL` — your Vercel production origin, e.g. `https://tradefort.vercel.app` (no trailing slash; used to build the post-payment callback URL).
+   - `APP_BASE_URL` — your Vercel production origin, e.g. `https://tradefort.vercel.app` (no trailing slash; used to build the post-payment callback URL + the password-reset link).
+   - `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` — Gmail SMTP (`smtp.gmail.com` / `465` / your Gmail address / a 16-char [App Password](https://myaccount.google.com/apppasswords)). Used for welcome, login-alert + password-reset emails.
+   - `APP_FROM` — optional display from-name, e.g. `Tradefort <you@gmail.com>` (defaults to `Tradefort <SMTP_USER>`).
 4. In the **Paystack dashboard** → Settings → API Configuration, set the **Webhook URL** to `https://<your-vercel-domain>/api/paystack/webhook` (the authoritative, HMAC-signed payment confirmation that auto-settles deposits).
 5. After the first deploy, create the schema + seed market data:
    ```bash

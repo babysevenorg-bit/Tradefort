@@ -140,9 +140,27 @@ export const watchlist = pgTable(
   (t) => [uniqueIndex("watch_user_symbol_idx").on(t.userId, t.symbol)],
 );
 
+export const passwordResets = pgTable(
+  "password_resets",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    // The token is stored hashed (sha256 hex) so a DB leak doesn't expose
+    // valid reset tokens. The raw token is sent in the reset email link.
+    tokenHash: text("token_hash").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("pw_reset_token_idx").on(t.tokenHash), index("pw_reset_user_idx").on(t.userId)],
+);
+
 export type User = typeof users.$inferSelect;
 export type Wallet = typeof wallets.$inferSelect;
 export type Instrument = typeof instruments.$inferSelect;
 export type Trade = typeof trades.$inferSelect;
 export type Signal = typeof signals.$inferSelect;
 export type Deposit = typeof deposits.$inferSelect;
+export type PasswordReset = typeof passwordResets.$inferSelect;

@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { users, wallets } from "@/db/schema";
 import { createSession, hashPassword } from "@/lib/auth";
 import { fail, handle } from "@/lib/api";
+import { sendWelcome } from "@/lib/mail";
 
 export async function POST(req: Request) {
   return handle(async () => {
@@ -35,6 +36,11 @@ export async function POST(req: Request) {
     ]);
 
     await createSession(user.id);
+    // Fire-and-forget the welcome email — don't block registration on SMTP,
+    // and don't surface SMTP errors to the client.
+    void sendWelcome({ to: user.email, name: user.name }).catch((e) =>
+      console.error("[mail] welcome send failed:", e),
+    );
     const { passwordHash: _drop, ...safe } = user;
     void _drop;
     return { user: safe };
